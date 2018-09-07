@@ -1,0 +1,12 @@
+warning: unused variable: `x`
+  --> $DIR/lint-allow-warnings-warn-unused-outer-attr.rs:8:9
+   |
+LL |     let x = 3;
+   |         ^ help: consider using `_x` instead
+   |
+note: lint level defined here
+  --> $DIR/lint-allow-warnings-warn-unused-outer-attr.rs:6:8
+   |
+LL | #[warn(unused_variables)]
+   |        ^^^^^^^^^^^^^^^^
+
