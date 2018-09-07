@@ -72,6 +72,11 @@ impl LintLevelSets {
             }
         }
 
+        debug!("Setting lints from command line options to: ");
+        for (id, (level, _)) in specs.iter() {
+            debug!("lint {} -> {:?}", id.lint_name_raw(), level);
+        }
+
         self.list.push(LintSet::CommandLine {
             specs: specs,
         });
@@ -98,6 +103,13 @@ impl LintLevelSets {
             level = cmp::min(*driver_level, level);
         }
 
+        if level == lint.default_level {
+            debug!("Returning ({:?}, {}) for lint {}", level, src.to_string(), lint.name);
+        } else {
+            debug!("Returning ({:?}, {}) for lint {} (default: {:?})",
+                   level, src.to_string(), lint.name, lint.default_level);
+        }
+
         return (level, src)
     }
 
@@ -109,6 +121,9 @@ impl LintLevelSets {
     {
         if let Some(specs) = aux {
             if let Some(&(level, src)) = specs.get(&id) {
+                debug!(
+                    "Returning ({:?}, {}) for lint id {} from aux",
+                    level, src.to_string(), id.lint_name_raw());
                 return (Some(level), src)
             }
         }
@@ -116,14 +131,26 @@ impl LintLevelSets {
             match self.list[idx as usize] {
                 LintSet::CommandLine { ref specs } => {
                     if let Some(&(level, src)) = specs.get(&id) {
+                        debug!(
+                            "Returning ({:?}, {}) for lint id {} from cli specs",
+                            level, src.to_string(), id.lint_name_raw());
                         return (Some(level), src)
                     }
+                    debug!(
+                        "Returning no level for lint id {} from cli lint set",
+                        id.lint_name_raw());
                     return (None, LintSource::Default)
                 }
                 LintSet::Node { ref specs, parent } => {
                     if let Some(&(level, src)) = specs.get(&id) {
+                        debug!(
+                            "Returning ({:?}, {}) for lint id {} from node specs",
+                            level, src.to_string(), id.lint_name_raw());
                         return (Some(level), src)
                     }
+                    debug!(
+                        "Recursing up from {} to {} to get level for lint id {}",
+                        idx, parent, id.lint_name_raw());
                     idx = parent;
                 }
             }
@@ -457,6 +484,15 @@ impl<'a> LintLevelsBuilder<'a> {
         -> DiagnosticBuilder<'a>
     {
         let (level, src) = self.sets.get_lint_level(lint, self.cur, None, self.sess);
+        let src_s = match src {
+            LintSource::Default => format!("Default"),
+            LintSource::Node(name, span, sym) => {
+                let sym = sym.map_or("<no sym>".to_string(), |sym| sym.to_string());
+                format!("Node({}, {:?}, {})", name, span, sym)
+            },
+            LintSource::CommandLine(sym) => format!("CommandLine({})", sym),
+        };
+        debug!("level and src for lint {}: {:?} and {}", lint.name, level, src_s);
         lint::struct_lint_level(self.sess, lint, level, src, span, msg)
     }
 
@@ -494,9 +530,18 @@ impl LintLevelMap {
     pub fn level_and_source(&self, lint: &'static Lint, id: HirId, session: &Session)
         -> Option<(Level, LintSource)>
     {
-        self.id_to_set.get(&id).map(|idx| {
+        let res: Option<(Level, LintSource)> = self.id_to_set.get(&id).map(|idx| {
             self.sets.get_lint_level(lint, *idx, None, session)
-        })
+        });
+        match res {
+            None => debug!("no level and source for lint {}", lint.name),
+            Some((level, src)) => {
+                debug!(
+                    "level and source for lint {}: {:?} and {}",
+                    lint.name, level, src.to_string());
+            },
+        }
+        res
     }
 
     /// Returns if this `id` has lint level information.

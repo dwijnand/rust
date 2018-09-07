@@ -466,6 +466,19 @@ pub enum LintSource {
     CommandLine(Symbol),
 }
 
+impl LintSource {
+    pub fn to_string(&self) -> String {
+        match self {
+            LintSource::Default => format!("Default"),
+            LintSource::Node(name, span, sym) => {
+                let sym = sym.map_or("<no sym>".to_string(), |sym| sym.to_string());
+                format!("Node({}, {:?}, {})", name, span, sym)
+            },
+            LintSource::CommandLine(sym) => format!("CommandLine({})", sym),
+        }
+    }
+}
+
 impl_stable_hash_for!(enum self::LintSource {
     Default,
     Node(name, span, reason),

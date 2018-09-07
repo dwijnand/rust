@@ -2820,6 +2820,10 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
             loop {
                 let hir_id = self.hir().definitions().node_to_hir_id(id);
                 if let Some(pair) = sets.level_and_source(lint, hir_id, self.sess) {
+                    let (level, src) = pair;
+                    debug!(
+                        "level and source for lint {}: {:?} and {}",
+                        lint.name, level, src.to_string());
                     return pair
                 }
                 let next = self.hir().get_parent_node(id);
@@ -2840,6 +2844,9 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
     {
         let node_id = self.hir().hir_to_node_id(hir_id);
         let (level, src) = self.lint_level_at_node(lint, node_id);
+        debug!(
+            "constructing span lint hir for {}, level: {:?}, src: {}, message: {}",
+            lint.name, level, src.to_string(), msg);
         lint::struct_lint_level(self.sess, lint, level, src, Some(span.into()), msg)
     }
 
@@ -2851,6 +2858,9 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         -> DiagnosticBuilder<'tcx>
     {
         let (level, src) = self.lint_level_at_node(lint, id);
+        debug!(
+            "constructing span lint node for lint {}, level: {:?}, src: {}, message: {}",
+            lint.name, level, src.to_string(), msg);
         lint::struct_lint_level(self.sess, lint, level, src, Some(span.into()), msg)
     }
 
@@ -2858,6 +2868,9 @@ impl<'a, 'gcx, 'tcx> TyCtxt<'a, 'gcx, 'tcx> {
         -> DiagnosticBuilder<'tcx>
     {
         let (level, src) = self.lint_level_at_node(lint, id);
+        debug!(
+            "constructing lint node for lint {}, level: {:?}, src: {}, message: {}",
+            lint.name, level, src.to_string(), msg);
         lint::struct_lint_level(self.sess, lint, level, src, None, msg)
     }
 
