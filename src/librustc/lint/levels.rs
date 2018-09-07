@@ -84,27 +84,11 @@ impl LintLevelSets {
                       sess: &Session)
         -> (Level, LintSource)
     {
-        let (level, mut src) = self.get_lint_id_level(LintId::of(lint), idx, aux);
+        let (level, src) = self.get_lint_id_level(LintId::of(lint), idx, aux);
 
         // If `level` is none then we actually assume the default level for this
         // lint.
         let mut level = level.unwrap_or_else(|| lint.default_level(sess));
-
-        // If we're about to issue a warning, check at the last minute for any
-        // directives against the warnings "lint". If, for example, there's an
-        // `allow(warnings)` in scope then we want to respect that instead.
-        if level == Level::Warn {
-            let (warnings_level, warnings_src) =
-                self.get_lint_id_level(LintId::of(lint::builtin::WARNINGS),
-                                       idx,
-                                       aux);
-            if let Some(configured_warning_level) = warnings_level {
-                if configured_warning_level != Level::Warn {
-                    level = configured_warning_level;
-                    src = warnings_src;
-                }
-            }
-        }
 
         // Ensure that we never exceed the `--cap-lints` argument.
         level = cmp::min(level, self.lint_cap);
