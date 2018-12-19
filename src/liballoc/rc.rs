@@ -1176,6 +1176,14 @@ impl<T> From<Vec<T>> for Rc<[T]> {
     }
 }
 
+#[stable(feature = "nonnull_from_rc", since = "1.34.0")]
+impl<T: ?Sized> From<Rc<T>> for NonNull<T> {
+    #[inline]
+    fn from(rc: Rc<T>) -> Self {
+        unsafe { NonNull::new_unchecked(Rc::into_raw(rc) as *mut _) }
+    }
+}
+
 /// `Weak` is a version of [`Rc`] that holds a non-owning reference to the
 /// managed value. The value is accessed by calling [`upgrade`] on the `Weak`
 /// pointer, which returns an [`Option`]`<`[`Rc`]`<T>>`.
